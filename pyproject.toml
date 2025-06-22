@@ -1,0 +1,23 @@
+[project]
+name = "compare-cb-up2pay-kalisport"
+version = "0.1.0"
+description = "Application pour comparer les paiements entre Up2Pay et Kalisport"
+authors = [
+    {name = "Gregory COCHIN",email = "gregory.cochin@tech-advantage.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0"
+]
+
+[tool.poetry]
+packages = [{include = "compare_cb_up2pay_kalisport", from = "src"}]
+
+[project.scripts]
+compare-payments = "compare_cb_up2pay_kalisport.main:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
