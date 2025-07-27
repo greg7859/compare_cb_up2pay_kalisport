@@ -1,5 +1,5 @@
-import os
 from typing import Dict, List
+import os
 import pandas as pd
 from datetime import datetime
 
@@ -26,8 +26,10 @@ class ExcelGenerator:
         columns_order = [
             'transaction_number', 
             'reference', 
+            'payment_method',
             'up2pay_type', 
-            'amount',
+            'up2pay_amount',
+            'kalisport_amount',
             'date_time',
             'up2pay_status', 
             'kalisport_status', 
@@ -40,8 +42,10 @@ class ExcelGenerator:
         df.rename(columns={
             'transaction_number': 'Numéro de transaction',
             'reference': 'Référence commande',
+            'payment_method': 'Méthode de paiement',
             'up2pay_type': 'Type Up2Pay',
-            'amount': 'Montant',
+            'up2pay_amount': 'Montant Up2Pay',
+            'kalisport_amount': 'Montant Kalisport',
             'date_time': 'Date et heure',
             'up2pay_status': 'Statut Up2Pay',
             'kalisport_status': 'État Kalisport',

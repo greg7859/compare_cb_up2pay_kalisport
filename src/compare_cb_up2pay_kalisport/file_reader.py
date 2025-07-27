@@ -1,7 +1,7 @@
 import csv
 import os
 import glob
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 class FileReader:
