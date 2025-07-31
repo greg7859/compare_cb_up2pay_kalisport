@@ -1,86 +1,63 @@
 import csv
 import os
 import glob
-from typing import Dict, List
+from typing import List
+from .models import Up2PayTransaction, KalisportPayment
 
 
 class FileReader:
     """Classe pour lire les fichiers CSV de Up2Pay et Kalisport."""
 
     @staticmethod
-    def read_up2pay_file(data_dir: str) -> List[Dict]:
-        """
-        Lit le fichier Up2Pay CSV.
-        
-        Args:
-            data_dir: Chemin vers le répertoire contenant les fichiers de données
-            
-        Returns:
-            Liste de dictionnaires contenant les données Up2Pay
-        """
-        up2pay_files = glob.glob(os.path.join(data_dir, "Export_*.csv"))
+    def get_file_from_path(data_dir: str, template: str) -> str:
+        up2pay_files = glob.glob(os.path.join(data_dir, template))
         if not up2pay_files:
             raise FileNotFoundError(f"Aucun fichier Up2Pay trouvé dans {data_dir}")
         
         up2pay_file = up2pay_files[0]  # Prend le premier fichier trouvé
         print(f"--> Lecture du fichier Up2Pay : {up2pay_file}...")
- 
+        return up2pay_file
+
+    @staticmethod
+    def read_up2pay_file(data_dir: str, template: str) -> List[Up2PayTransaction]:
+        """
+        Lit le fichier Up2Pay CSV.
+        
+        Args:
+            data_dir: Chemin vers le répertoire contenant les fichiers de données
+            template: Template du nom de fichier à rechercher
+            
+        Returns:
+            Liste d'objets Up2PayTransaction
+        """
+        up2pay_file = FileReader.get_file_from_path(data_dir, template)
         up2pay_data = []
         with open(up2pay_file, 'r', encoding='iso-8859-1') as f:
             reader = csv.DictReader(f, delimiter=';')
             for row in reader:
-                up2pay_data.append({
-                    'transaction_number': row.get('Num. transaction', '').strip(),
-                    'amount': row.get('Montant', '').strip().replace(',', '.'),
-                    'reference': row.get('Référence commande', '').strip(),
-                    'date_time': row.get('Date & Heure', '').strip(),
-                    'type': row.get('Type de transaction', '').strip(),
-                    'status': row.get('Statut de la transaction', '').strip()
-                })
+                transaction = Up2PayTransaction.from_csv_row(row)
+                up2pay_data.append(transaction)
         
         return up2pay_data
 
     @staticmethod
-    def read_kalisport_file(data_dir: str) -> List[Dict]:
+    def read_kalisport_file(data_dir: str, template: str) -> List[KalisportPayment]:
         """
         Lit le fichier Kalisport CSV.
         
         Args:
             data_dir: Chemin vers le répertoire contenant les fichiers de données
+            template: Template du nom de fichier à rechercher
             
         Returns:
-            Liste de dictionnaires contenant les données Kalisport
+            Liste d'objets KalisportPayment
         """
-        kalisport_files = glob.glob(os.path.join(data_dir, "paiements-*.csv"))
-        if not kalisport_files:
-            raise FileNotFoundError(f"Aucun fichier Kalisport trouvé dans {data_dir}")
-        
-        kalisport_file = kalisport_files[0]  # Prend le premier fichier trouvé
-        print(f"--> Lecture du fichier Up2Pay : {kalisport_file}")
- 
+        kalisport_file = FileReader.get_file_from_path(data_dir, template)
         kalisport_data = []
         with open(kalisport_file, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                # Nettoyer les guillemets des valeurs si nécessaire
-                numero = row.get('NUMERO', '').strip().strip('"')
-                nom = row.get('NOM', '').strip().strip('"')
-                prenom = row.get('PRENOM', '').strip().strip('"')
-                mode_paiement = row.get('MODE_PAIEMENT', '').strip().strip('"')
-                montant = row.get('MONTANT', '').strip().strip('"').replace(',', '.')
-                paye = row.get('PAYE', '').strip().strip('"')
-                etat = row.get('ETAT', '').strip().strip('"')
-                date_paiement = row.get('DATE_PAIEMENT', '').strip().strip('"')
-                
-                kalisport_data.append({
-                    'transaction_number': numero,
-                    'name': nom,
-                    'first_name': prenom,
-                    'payment_method': mode_paiement,
-                    'amount': montant,
-                    'paid': paye,
-                    'status': etat,
-                    'payment_date': date_paiement
-                })
+                payment = KalisportPayment.from_csv_row(row)
+                kalisport_data.append(payment)
         
         return kalisport_data

@@ -2,18 +2,20 @@ from typing import Dict, List
 import os
 import pandas as pd
 from datetime import datetime
+from .models import ReferencePaymentSummary
 
 
 class ExcelGenerator:
     """Classe pour générer un fichier Excel avec les résultats de comparaison."""
 
     @staticmethod
-    def generate_excel(comparison_results: List[Dict], output_dir: str) -> str:
+    def generate_excel(comparison_results: List[Dict], reference_payment_summary: Dict[str, ReferencePaymentSummary], output_dir: str) -> str:
         """
         Génère un fichier Excel avec les résultats de comparaison.
         
         Args:
             comparison_results: Liste des résultats de comparaison
+            reference_payment_summary: Dictionnaire des résumés par référence
             output_dir: Répertoire de sortie pour le fichier Excel
             
         Returns:
@@ -52,6 +54,33 @@ class ExcelGenerator:
             'comparison_result': 'Résultat de la comparaison'
         }, inplace=True)
         
+        # Créer le DataFrame pour le résumé par référence
+        summary_data = []
+        for reference, summary in reference_payment_summary.items():
+            # Préparer les données de base
+            row_data = {
+                'Référence commande': summary.reference,
+                'Nombre total de transactions': summary.total_count,
+                'Montant total': float(summary.total_amount),
+            }
+            
+            # Ajouter les résumés par type
+            for type_name, type_summary in summary.by_type.items():
+                row_data[f'Nombre {type_name}'] = type_summary.count
+                row_data[f'Montant {type_name}'] = float(type_summary.total_amount)
+            
+            # Ajouter les résumés par statut
+            for status_name, status_summary in summary.by_status.items():
+                row_data[f'Nombre {status_name}'] = status_summary.count
+                row_data[f'Montant {status_name}'] = float(type_summary.total_amount)
+            
+            # Ajouter des informations sur les transactions
+            row_data['Numéros de transactions'] = ', '.join([t.transaction_number for t in summary.transactions])
+            
+            summary_data.append(row_data)
+        
+        df_summary = pd.DataFrame(summary_data)
+        
         # Créer le répertoire de sortie s'il n'existe pas
         os.makedirs(output_dir, exist_ok=True)
         
@@ -59,20 +88,32 @@ class ExcelGenerator:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_file = os.path.join(output_dir, f"comparaison_paiements_{timestamp}.xlsx")
         
-        # Écrire le DataFrame dans un fichier Excel avec ajustement automatique des colonnes
+        # Écrire les DataFrames dans un fichier Excel avec plusieurs onglets
         with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Comparaison')
+            # Onglet principal avec tous les détails
+            df.to_excel(writer, index=False, sheet_name='Comparaison détaillée')
             
-            # Ajuster automatiquement la largeur des colonnes
-            worksheet = writer.sheets['Comparaison']
+            # Onglet résumé par référence
+            df_summary.to_excel(writer, index=False, sheet_name='Résumé par référence')
+            
+            # Ajuster automatiquement la largeur des colonnes pour l'onglet principal
+            worksheet_detail = writer.sheets['Comparaison détaillée']
             for i, col in enumerate(df.columns):
-                # Trouver la longueur maximale dans la colonne
                 max_length = max(
-                    df[col].astype(str).map(len).max(),  # Longueur maximale des données
-                    len(str(col))  # Longueur de l'en-tête
-                ) + 2  # Ajouter un peu d'espace supplémentaire
-                
-                # Définir la largeur de la colonne
-                worksheet.column_dimensions[chr(65 + i)].width = max_length
+                    df[col].astype(str).map(len).max(),
+                    len(str(col))
+                ) + 2
+                worksheet_detail.column_dimensions[chr(65 + i)].width = max_length
+            
+            # Ajuster automatiquement la largeur des colonnes pour l'onglet résumé
+            worksheet_summary = writer.sheets['Résumé par référence']
+            for i, col in enumerate(df_summary.columns):
+                max_length = max(
+                    df_summary[col].astype(str).map(len).max() if len(df_summary) > 0 else 0,
+                    len(str(col))
+                ) + 2
+                # Limiter la largeur maximale pour éviter des colonnes trop larges
+                max_length = min(max_length, 50)
+                worksheet_summary.column_dimensions[chr(65 + i)].width = max_length
         
         return output_file

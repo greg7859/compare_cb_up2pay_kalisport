@@ -8,7 +8,8 @@ Ce logiciel permet de comparer les transactions de paiement entre le système Up
 - Import des fichiers CSV de paiements Kalisport
 - Comparaison automatique des transactions entre les deux systèmes
 - Identification des transactions présentes dans un système mais absentes dans l'autre
-- Génération d'un rapport Excel détaillé avec les résultats de la comparaison
+- Création d'un résumé par référence Up2Pay
+- Génération d'un rapport Excel détaillé avec les résultats de la comparaison et du résumé
 - Mise en évidence des écarts de montants ou de statuts
 
 ## Prérequis
@@ -53,8 +54,19 @@ Options disponibles :
 
 ## Interprétation des résultats
 
+### Comparaison détaillée
+
 * **OK** : La transaction est présente dans les deux systèmes avec des statuts cohérents (Up2Pay "Acceptée" et Kalisport "Payé") ou la transaction est refusée dans Up2Pay (ce qui est normal qu'elle n'apparaisse pas dans Kalisport)
 * **Erreur: Paiement accepté dans Up2Pay mais absent dans Kalisport** : La transaction est acceptée dans Up2Pay mais n'a pas été trouvée dans Kalisport
 * **Erreur: Up2Pay accepté mais Kalisport [statut]** : La transaction est acceptée dans Up2Pay mais a un statut différent de "Payé" dans Kalisport
 * **Erreur: Up2Pay [statut]** : La transaction a un statut problématique dans Up2Pay (ni "Acceptée" ni "Refusée")
 * **Erreur: Paiement non trouvé dans Kalisport** : La transaction existe dans Up2Pay mais n'a pas été trouvée dans Kalisport (et n'est pas refusée)
+
+### Résumé par référence
+
+Cet onglet contient une synthèse par référence Up2Pay :
+
+* nombre de paiements
+* montant total
+* nombre de remboursements
+* ...
