@@ -27,7 +27,8 @@ def app():
         print(f"-> Scan des fichiers Up2Pay dans {data_dir}...")
         up2pay_data = FileReader.read_up2pay_file(data_dir, "Export_transactions_*.csv")
         print(f"--> Nombre de paiements Up2Pay trouvés: {len(up2pay_data)}")
-        
+                
+        # Lire les autres fichiers Kalisport
         print(f"-> Scan des fichiers Kalisport dans {data_dir}...")
         kalisport_data = FileReader.read_kalisport_file(data_dir, "paiements-*.csv")
         print(f"--> Nombre de paiements Kalisport trouvés: {len(kalisport_data)}")
@@ -40,12 +41,14 @@ def app():
         counter = Up2PayCounter()
         counter.add_transactions(up2pay_data)
         reference_payment_summary = counter.get_all_summaries()
+        id_payment_summary = counter.get_all_id_summaries()
+
         # Affichage du rapport
         #counter.print_summary_report()
 
         # Générer le fichier Excel
         print("-> Génération du fichier Excel...")
-        output_file = ExcelGenerator.generate_excel(comparison_results, reference_payment_summary, output_dir)
+        output_file = ExcelGenerator.generate_excel(comparison_results, reference_payment_summary, id_payment_summary, output_dir)
         
         print(f"-> Fichier Excel généré avec succès: {output_file}")
         

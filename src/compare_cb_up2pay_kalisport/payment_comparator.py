@@ -32,11 +32,15 @@ class PaymentComparator:
             kalisport_status = "Non trouvé"
             kalisport_amount = 0
             kalisport_payment_method = ""
+            kalisport_name = ""
+            kalisport_first_name = ""
             comparison_result = "Erreur: Paiement non trouvé dans Kalisport"
             
             if kalisport_payment:
                 kalisport_status = kalisport_payment.status
                 kalisport_amount = kalisport_payment.amount
+                kalisport_name = kalisport_payment.name
+                kalisport_first_name = kalisport_payment.first_name
                 kalisport_payment_method = kalisport_payment.payment_method
                 
                 # Vérifier si le paiement est accepté dans Up2Pay et payé dans Kalisport
@@ -55,11 +59,13 @@ class PaymentComparator:
                 comparison_result = "Erreur: Paiement accepté dans Up2Pay mais absent dans Kalisport"
             elif up2pay_status.lower() == "refusée" or up2pay_status.lower() == "refusee":
                 comparison_result = "OK"
-            
+
             comparison_results.append({
                 'transaction_number': transaction_number,
                 'payment_method': kalisport_payment_method,
                 'reference': up2pay_payment.reference,
+                'name': kalisport_name,
+                'first_name': kalisport_first_name,
                 'up2pay_type': up2pay_payment.type,
                 'up2pay_amount': up2pay_amount,
                 'kalisport_amount': kalisport_amount,

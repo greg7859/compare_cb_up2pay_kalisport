@@ -60,8 +60,8 @@ class KalisportPayment:
 
 
 @dataclass
-class PaymentSummaryByType:
-    """Résumé des paiements par type pour une référence donnée."""
+class PaymentSummary:
+    """Résumé des paiements par 'groupe' pour une référence donnée."""
     count: int
     total_amount: Decimal
     
@@ -76,8 +76,28 @@ class ReferencePaymentSummary:
     reference: str
     total_count: int
     total_amount: Decimal
-    by_type: Dict[str, PaymentSummaryByType]
-    by_status: Dict[str, PaymentSummaryByType]
+    by_type: Dict[str, PaymentSummary]
+    by_status: Dict[str, PaymentSummary]
+    transactions: List[Up2PayTransaction]
+    
+    def __post_init__(self):
+        if self.total_amount is None:
+            self.total_amount = Decimal('0')
+        if self.by_type is None:
+            self.by_type = {}
+        if self.by_status is None:
+            self.by_status = {}
+        if self.transactions is None:
+            self.transactions = []
+
+@dataclass
+class IdPaymentSummary:
+    """Résumé complet des paiements pour une référence donnée."""
+    id: str
+    total_count: int
+    total_amount: Decimal
+    by_type: Dict[str, PaymentSummary]
+    by_status: Dict[str, PaymentSummary]
     transactions: List[Up2PayTransaction]
     
     def __post_init__(self):
