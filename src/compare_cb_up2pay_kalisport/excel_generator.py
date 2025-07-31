@@ -132,7 +132,8 @@ class ExcelGenerator:
         """Construit les données d'une ligne pour les résumés."""
         row_data = {
             identifier_key: identifier_value,
-            'Nombre total de transactions': summary.total_count
+            'Nombre total de transactions': summary.total_count,
+            'Montant total': float(summary.total_amount)
         }
         
         # Ajouter les résumés par type
@@ -157,7 +158,7 @@ class ExcelGenerator:
     @staticmethod
     def _reorder_summary_columns(df: pd.DataFrame, identifier_column: str) -> pd.DataFrame:
         """Réorganise les colonnes des DataFrames de résumé pour un meilleur regroupement."""
-        base_columns = [identifier_column, 'Nombre total de transactions']
+        base_columns = [identifier_column, 'Nombre total de transactions', 'Montant total']
         type_columns = sorted([col for col in df.columns if 'Type' in col])
         status_columns = sorted([col for col in df.columns if 'Statut' in col])
         final_columns = ['Numéros de transactions']

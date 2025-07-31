@@ -26,7 +26,9 @@ def app():
         # Lire les fichiers
         print(f"-> Scan des fichiers Up2Pay dans {data_dir}...")
         up2pay_data = FileReader.read_up2pay_file(data_dir, "Export_transactions_*.csv")
+        up2pay_pnf_data = FileReader.read_up2pay_pnf_file(data_dir, "Export_pnf_*.csv")
         print(f"--> Nombre de paiements Up2Pay trouvés: {len(up2pay_data)}")
+        print(f"--> Nombre de paiements Up2Pay pnf trouvés: {len(up2pay_pnf_data)}")
                 
         # Lire les autres fichiers Kalisport
         print(f"-> Scan des fichiers Kalisport dans {data_dir}...")
@@ -40,6 +42,7 @@ def app():
         # Analyse des paiements
         counter = Up2PayCounter()
         counter.add_transactions(up2pay_data)
+        counter.add_planned_transactions(up2pay_pnf_data)
         reference_payment_summary = counter.get_all_summaries()
         id_payment_summary = counter.get_all_id_summaries()
 

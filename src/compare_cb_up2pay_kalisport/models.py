@@ -30,6 +30,51 @@ class Up2PayTransaction:
 
 
 @dataclass
+class Up2PayPlannedTransaction:
+    """Modèle pour une transaction planifiée Up2Pay."""
+    subscription_number: str
+    status: str
+    type: str
+    creation_date: str
+    reference: str
+    expiration_date: str  # Format AAMM
+    cardholder_email: str
+    amount: Decimal
+    currency: str
+    remaining_payments: str
+    next_debit: str
+    contract_number: str
+    rank: str
+    group: str
+    brand: str
+    site: str
+    
+    @classmethod
+    def from_csv_row(cls, row: Dict[str, str]) -> 'Up2PayPlannedTransaction':
+        """Crée une transaction planifiée Up2Pay à partir d'une ligne CSV."""
+        amount_str = row.get('Montant', '').strip().replace(',', '.')
+        amount = Decimal(amount_str) if amount_str else Decimal('0')
+        
+        return cls(
+            subscription_number=row.get('Numéro d\'abonnement', '').strip(),
+            status=row.get('Statut', '').strip(),
+            type=row.get('Type', '').strip(),
+            creation_date=row.get('Date de création', '').strip(),
+            reference=row.get('Référence commande', '').strip(),
+            expiration_date=row.get('Date expiration (AAMM)', '').strip(),
+            cardholder_email=row.get('Email porteur', '').strip(),
+            amount=amount,
+            currency=row.get('Devise', '').strip(),
+            remaining_payments=row.get('Paiements restants', '').strip(),
+            next_debit=row.get('Prochain débit', '').strip(),
+            contract_number=row.get('Num. contrat', '').strip(),
+            rank=row.get('Rang', '').strip(),
+            group=row.get('Groupe', '').strip(),
+            brand=row.get('Enseigne', '').strip(),
+            site=row.get('Site', '').strip()
+        )
+
+@dataclass
 class KalisportPayment:
     """Modèle pour un paiement Kalisport."""
     transaction_number: str

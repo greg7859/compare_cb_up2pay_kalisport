@@ -1,7 +1,7 @@
 from typing import Dict, List
 from decimal import Decimal
 import re
-from .models import Up2PayTransaction, PaymentSummary, ReferencePaymentSummary, IdPaymentSummary
+from .models import Up2PayTransaction, Up2PayPlannedTransaction, PaymentSummary, ReferencePaymentSummary, IdPaymentSummary
 
 
 class Up2PayCounter:
@@ -9,19 +9,31 @@ class Up2PayCounter:
     
     def __init__(self):
         self.transactions: List[Up2PayTransaction] = []
+        self.planned_transactions: List[Up2PayPlannedTransaction] = []
         self.summaries_by_reference: Dict[str, ReferencePaymentSummary] = {}
         self.summaries_by_id: Dict[str, IdPaymentSummary] = {}
-    
+   
     def add_transaction(self, transaction: Up2PayTransaction) -> None:
         """Ajoute une transaction à l'analyse."""
         self.transactions.append(transaction)
         self._update_summary(transaction)
         self._update_id_summary(transaction)
     
+    def add_planned_transaction(self, planned_transaction: Up2PayPlannedTransaction) -> None:
+        """Ajoute une transaction planifiée à l'analyse."""
+        self.planned_transactions.append(planned_transaction)
+        self._update_summary_with_planned(planned_transaction)
+        self._update_id_summary_with_planned(planned_transaction)
+    
     def add_transactions(self, transactions: List[Up2PayTransaction]) -> None:
         """Ajoute plusieurs transactions à l'analyse."""
         for transaction in transactions:
             self.add_transaction(transaction)
+    
+    def add_planned_transactions(self, planned_transactions: List[Up2PayPlannedTransaction]) -> None:
+        """Ajoute plusieurs transactions planifiées à l'analyse."""
+        for planned_transaction in planned_transactions:
+            self.add_planned_transaction(planned_transaction)
     
     def _extract_id_from_reference(self, reference: str) -> str:
         """Extrait l'ID de la référence (format: ID1716)."""
@@ -43,10 +55,13 @@ class Up2PayCounter:
             )
         
         summary = self.summaries_by_id[transaction_id]
-        
+        transaction_status = transaction.status
+
         # Mise à jour des totaux
         summary.total_count += 1
-        summary.total_amount += transaction.amount
+        # On ajoute le montant uniquement si le statut n'est pas "Refusée"
+        if transaction_status != "Refusée":
+            summary.total_amount += transaction.amount
         summary.transactions.append(transaction)
         
         # Mise à jour par type
@@ -60,7 +75,6 @@ class Up2PayCounter:
         summary.by_type[transaction_type].total_amount += transaction.amount
         
         # Mise à jour par statut
-        transaction_status = transaction.status
         if transaction_status not in summary.by_status:
             summary.by_status[transaction_status] = PaymentSummary(
                 count=0,
@@ -86,8 +100,10 @@ class Up2PayCounter:
         summary = self.summaries_by_reference[reference]
         
         # Mise à jour des totaux
+        transaction_status = transaction.status
         summary.total_count += 1
-        summary.total_amount += transaction.amount
+        if transaction_status != "Refusée":
+            summary.total_amount += transaction.amount
         summary.transactions.append(transaction)
         
         # Mise à jour par type
@@ -101,7 +117,7 @@ class Up2PayCounter:
         summary.by_type[transaction_type].total_amount += transaction.amount
         
         # Mise à jour par statut
-        transaction_status = transaction.status
+
         if transaction_status not in summary.by_status:
             summary.by_status[transaction_status] = PaymentSummary(
                 count=0,
@@ -109,7 +125,88 @@ class Up2PayCounter:
             )
         summary.by_status[transaction_status].count += 1
         summary.by_status[transaction_status].total_amount += transaction.amount
+
+    def _update_id_summary_with_planned(self, planned_transaction: Up2PayPlannedTransaction) -> None:
+        """Met à jour le résumé par ID avec une transaction planifiée."""
+        transaction_id = self._extract_id_from_reference(planned_transaction.reference)
+        
+        if transaction_id not in self.summaries_by_id:
+            self.summaries_by_id[transaction_id] = IdPaymentSummary(
+                id=transaction_id,
+                total_count=0,
+                total_amount=Decimal('0'),
+                by_type={},
+                by_status={},
+                transactions=[]
+            )
+        
+        summary = self.summaries_by_id[transaction_id]
+        
+        # Mise à jour des totaux
+        summary.total_count += 1
+        summary.total_amount += planned_transaction.amount
+        
+        # Mise à jour par type (Abonnement)
+        transaction_type = "Abonnement"
+        if transaction_type not in summary.by_type:
+            summary.by_type[transaction_type] = PaymentSummary(
+                count=0,
+                total_amount=Decimal('0')
+            )
+        summary.by_type[transaction_type].count += 1
+        summary.by_type[transaction_type].total_amount += planned_transaction.amount
+        
+        # Mise à jour par statut (Planifiée)
+        transaction_status = "Planifiée"
+        if transaction_status not in summary.by_status:
+            summary.by_status[transaction_status] = PaymentSummary(
+                count=0,
+                total_amount=Decimal('0')
+            )
+        summary.by_status[transaction_status].count += 1
+        summary.by_status[transaction_status].total_amount += planned_transaction.amount
     
+    def _update_summary_with_planned(self, planned_transaction: Up2PayPlannedTransaction) -> None:
+        """Met à jour le résumé pour la référence de la transaction planifiée."""
+        reference = planned_transaction.reference
+        
+        if reference not in self.summaries_by_reference:
+            self.summaries_by_reference[reference] = ReferencePaymentSummary(
+                reference=reference,
+                total_count=0,
+                total_amount=Decimal('0'),
+                by_type={},
+                by_status={},
+                transactions=[]
+            )
+        
+        summary = self.summaries_by_reference[reference]
+        
+        # Mise à jour des totaux
+        summary.total_count += 1
+        summary.total_amount += planned_transaction.amount
+        
+        # Mise à jour par type (Abonnement)
+        transaction_type = "Abonnement"
+        if transaction_type not in summary.by_type:
+            summary.by_type[transaction_type] = PaymentSummary(
+                count=0,
+                total_amount=Decimal('0')
+            )
+        summary.by_type[transaction_type].count += 1
+        summary.by_type[transaction_type].total_amount += planned_transaction.amount
+        
+        # Mise à jour par statut (Planifié)
+        transaction_status = "Planifié"
+        if transaction_status not in summary.by_status:
+            summary.by_status[transaction_status] = PaymentSummary(
+                count=0,
+                total_amount=Decimal('0')
+            )
+        summary.by_status[transaction_status].count += 1
+        summary.by_status[transaction_status].total_amount += planned_transaction.amount
+
+
     def get_summary_by_id(self, transaction_id: str) -> IdPaymentSummary:
         """Retourne le résumé pour un ID donné."""
         return self.summaries_by_id.get(transaction_id)
@@ -236,6 +333,7 @@ class Up2PayCounter:
         """Affiche un rapport de résumé des paiements."""
         print("=== Rapport de résumé des paiements Up2Pay ===")
         print(f"Nombre total de transactions: {len(self.transactions)}")
+        print(f"Nombre total de transactions planifiées: {len(self.planned_transactions)}")
         print(f"Nombre de références uniques: {len(self.summaries_by_reference)}")
         print()
         
