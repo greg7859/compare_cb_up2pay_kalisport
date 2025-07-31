@@ -58,6 +58,21 @@ class KalisportPayment:
             payment_date=row.get('DATE_PAIEMENT', '').strip().strip('"')
         )
 
+@dataclass
+class ComparisonPayment:
+    """Modèle pour le résultat de comparaison entre Up2Pay et Kalisport."""
+    transaction_number: str
+    payment_method: str
+    reference: str
+    name: str
+    first_name: str
+    up2pay_type: str
+    up2pay_amount: float
+    kalisport_amount: float
+    up2pay_status: str
+    kalisport_status: str
+    comparison_result: str
+    date_time: str
 
 @dataclass
 class PaymentSummary:

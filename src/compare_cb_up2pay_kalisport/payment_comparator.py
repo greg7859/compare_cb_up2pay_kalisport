@@ -1,11 +1,11 @@
-from typing import Dict, List
-from .models import KalisportPayment, Up2PayTransaction
+from typing import List
+from .models import KalisportPayment, Up2PayTransaction, ComparisonPayment
 
 class PaymentComparator:
     """Classe pour comparer les paiements entre Up2Pay et Kalisport."""
 
     @staticmethod
-    def compare_payments(up2pay_data: List[Up2PayTransaction], kalisport_data: List[KalisportPayment]) -> List[Dict]:
+    def compare_payments(up2pay_data: List[Up2PayTransaction], kalisport_data: List[KalisportPayment]) -> List[ComparisonPayment]:
         """
         Compare les paiements entre Up2Pay et Kalisport.
         
@@ -60,19 +60,19 @@ class PaymentComparator:
             elif up2pay_status.lower() == "refusée" or up2pay_status.lower() == "refusee":
                 comparison_result = "OK"
 
-            comparison_results.append({
-                'transaction_number': transaction_number,
-                'payment_method': kalisport_payment_method,
-                'reference': up2pay_payment.reference,
-                'name': kalisport_name,
-                'first_name': kalisport_first_name,
-                'up2pay_type': up2pay_payment.type,
-                'up2pay_amount': up2pay_amount,
-                'kalisport_amount': kalisport_amount,
-                'up2pay_status': up2pay_status,
-                'kalisport_status': kalisport_status,
-                'comparison_result': comparison_result,
-                'date_time': up2pay_payment.date_time
-            })
+            comparison_results.append(ComparisonPayment(
+                transaction_number=transaction_number,
+                payment_method=kalisport_payment_method,
+                reference=up2pay_payment.reference,
+                name=kalisport_name,
+                first_name=kalisport_first_name,
+                up2pay_type=up2pay_payment.type,
+                up2pay_amount=up2pay_amount,
+                kalisport_amount=kalisport_amount,
+                up2pay_status=up2pay_status,
+                kalisport_status=kalisport_status,
+                comparison_result=comparison_result,
+                date_time=up2pay_payment.date_time
+            ))
         
         return comparison_results

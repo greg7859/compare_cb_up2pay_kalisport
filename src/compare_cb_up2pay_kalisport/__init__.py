@@ -5,5 +5,6 @@ Module pour comparer les paiements entre Up2Pay et Kalisport.
 from .file_reader import FileReader
 from .payment_comparator import PaymentComparator
 from .excel_generator import ExcelGenerator
+from .models import Up2PayTransaction, KalisportPayment, ComparisonPayment
 
-__all__ = ['FileReader', 'PaymentComparator', 'ExcelGenerator']
+__all__ = ['FileReader', 'PaymentComparator', 'ExcelGenerator', 'Up2PayTransaction', 'KalisportPayment', 'ComparisonPayment']
