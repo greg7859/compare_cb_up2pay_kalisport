@@ -49,6 +49,23 @@ class Up2PayPlannedTransaction:
     brand: str
     site: str
     
+    @property
+    def total_planned_amount(self) -> Decimal:
+        """Calcule le montant total planifié (montant unitaire × nombre de paiements restants)."""
+        try:
+            remaining_count = int(self.remaining_payments) if self.remaining_payments else 0
+            return self.amount * remaining_count
+        except (ValueError, TypeError):
+            return Decimal('0')
+    
+    @property
+    def remaining_payments_count(self) -> int:
+        """Retourne le nombre de paiements restants sous forme d'entier."""
+        try:
+            return int(self.remaining_payments) if self.remaining_payments else 0
+        except (ValueError, TypeError):
+            return 0
+     
     @classmethod
     def from_csv_row(cls, row: Dict[str, str]) -> 'Up2PayPlannedTransaction':
         """Crée une transaction planifiée Up2Pay à partir d'une ligne CSV."""
