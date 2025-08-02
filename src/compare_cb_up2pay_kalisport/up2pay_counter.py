@@ -56,23 +56,27 @@ class Up2PayCounter:
         
         summary = self.summaries_by_id[transaction_id]
         transaction_status = transaction.status
+        transaction_type = transaction.type
 
         # Mise à jour des totaux
         summary.total_count += 1
+        transaction_amount_to_add = transaction.amount
+        if transaction_type.lower() == 'remboursement':
+            transaction_amount_to_add = -transaction.amount
+
         # On ajoute le montant uniquement si le statut n'est pas "Refusée"
         if transaction_status != "Refusée":
-            summary.total_amount += transaction.amount
+            summary.total_amount += transaction_amount_to_add
         summary.transactions.append(transaction)
         
-        # Mise à jour par type
-        transaction_type = transaction.type
+        # Mise à jour par type   
         if transaction_type not in summary.by_type:
             summary.by_type[transaction_type] = PaymentSummary(
                 count=0,
                 total_amount=Decimal('0')
             )
         summary.by_type[transaction_type].count += 1
-        summary.by_type[transaction_type].total_amount += transaction.amount
+        summary.by_type[transaction_type].total_amount += transaction_amount_to_add
         
         # Mise à jour par statut
         if transaction_status not in summary.by_status:
@@ -81,7 +85,7 @@ class Up2PayCounter:
                 total_amount=Decimal('0')
             )
         summary.by_status[transaction_status].count += 1
-        summary.by_status[transaction_status].total_amount += transaction.amount
+        summary.by_status[transaction_status].total_amount += transaction_amount_to_add
     
     def _update_summary(self, transaction: Up2PayTransaction) -> None:
         """Met à jour le résumé pour la référence de la transaction."""
@@ -98,23 +102,28 @@ class Up2PayCounter:
             )
         
         summary = self.summaries_by_reference[reference]
-        
-        # Mise à jour des totaux
+
         transaction_status = transaction.status
+        transaction_type = transaction.type
+        transaction_amount_to_add = transaction.amount
+        if transaction_type.lower() == 'remboursement':
+            transaction_amount_to_add = -transaction.amount
+
         summary.total_count += 1
+        # On ajoute le montant uniquement si le statut n'est pas "Refusée"
         if transaction_status != "Refusée":
-            summary.total_amount += transaction.amount
+            summary.total_amount += transaction_amount_to_add
         summary.transactions.append(transaction)
         
         # Mise à jour par type
-        transaction_type = transaction.type
+
         if transaction_type not in summary.by_type:
             summary.by_type[transaction_type] = PaymentSummary(
                 count=0,
                 total_amount=Decimal('0')
             )
         summary.by_type[transaction_type].count += 1
-        summary.by_type[transaction_type].total_amount += transaction.amount
+        summary.by_type[transaction_type].total_amount += transaction_amount_to_add
         
         # Mise à jour par statut
 
@@ -124,7 +133,7 @@ class Up2PayCounter:
                 total_amount=Decimal('0')
             )
         summary.by_status[transaction_status].count += 1
-        summary.by_status[transaction_status].total_amount += transaction.amount
+        summary.by_status[transaction_status].total_amount += transaction_amount_to_add
 
     def _update_id_summary_with_planned(self, planned_transaction: Up2PayPlannedTransaction) -> None:
         """Met à jour le résumé par ID avec une transaction planifiée."""
@@ -146,12 +155,13 @@ class Up2PayCounter:
         total_planned_amount = planned_transaction.total_planned_amount
         remaining_count = planned_transaction.remaining_payments_count
         
-        # Mise à jour des totaux - on compte le nombre de paiements restants, pas 1
+        # Mise à jour des totaux si le statut n'est pas "Resilié"
+        if planned_transaction.status.lower() != "resilié":
+            summary.total_amount += total_planned_amount
         summary.total_count += remaining_count
-        summary.total_amount += total_planned_amount
         
         # Mise à jour par type (Abonnement)
-        transaction_type = "Abonnement"
+        transaction_type = f"Abonnement - {planned_transaction.type} - {planned_transaction.status}"
         if transaction_type not in summary.by_type:
             summary.by_type[transaction_type] = PaymentSummary(
                 count=0,
@@ -160,8 +170,8 @@ class Up2PayCounter:
         summary.by_type[transaction_type].count += remaining_count
         summary.by_type[transaction_type].total_amount += total_planned_amount
         
-        # Mise à jour par statut (Planifiée)
-        transaction_status = "Planifiée"
+        # Mise à jour par statut de l'abonnement
+        transaction_status = f"{planned_transaction.type} - {planned_transaction.status}"
         if transaction_status not in summary.by_status:
             summary.by_status[transaction_status] = PaymentSummary(
                 count=0,
@@ -190,12 +200,13 @@ class Up2PayCounter:
         total_planned_amount = planned_transaction.total_planned_amount
         remaining_count = planned_transaction.remaining_payments_count
         
-        # Mise à jour des totaux - on compte le nombre de paiements restants, pas 1
+        # Mise à jour des totaux si le status n'est pas "Resilié"
+        if planned_transaction.status.lower() != "resilié":
+            summary.total_amount += total_planned_amount
         summary.total_count += remaining_count
-        summary.total_amount += total_planned_amount
         
         # Mise à jour par type (Abonnement)
-        transaction_type = "Abonnement"
+        transaction_type = f"Abonnement - {planned_transaction.type} - {planned_transaction.status}"
         if transaction_type not in summary.by_type:
             summary.by_type[transaction_type] = PaymentSummary(
                 count=0,
@@ -204,8 +215,8 @@ class Up2PayCounter:
         summary.by_type[transaction_type].count += remaining_count
         summary.by_type[transaction_type].total_amount += total_planned_amount
         
-        # Mise à jour par statut (Planifié)
-        transaction_status = "Planifié"
+         # Mise à jour par statut de l'abonnement
+        transaction_status = f"{planned_transaction.type} - {planned_transaction.status}"
         if transaction_status not in summary.by_status:
             summary.by_status[transaction_status] = PaymentSummary(
                 count=0,

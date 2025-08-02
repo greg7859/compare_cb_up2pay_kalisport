@@ -46,11 +46,20 @@ class PaymentComparator:
                 # Vérifier si le paiement est accepté dans Up2Pay et payé dans Kalisport
                 if up2pay_status.lower() == "acceptée" or up2pay_status.lower() == "acceptee":
                     if kalisport_status.lower() == "payé" or kalisport_status.lower() == "paye":
-                        # Comparer les montants
-                        if abs(up2pay_amount - kalisport_amount) < 0.001:  # Tolérance de 0.1 centime
-                            comparison_result = "OK"
+                        # Comparer les montants en tenant compte du type de transaction
+                        if up2pay_payment.type.lower() == "remboursement":
+                            # Pour les remboursements, Up2Pay est positif et Kalisport négatif
+                            # On compare en valeur absolue
+                            if abs(abs(up2pay_amount) - abs(kalisport_amount)) < 0.001:
+                                comparison_result = "OK"
+                            else:
+                                comparison_result = f"Erreur: Montants différents (Up2Pay: {up2pay_amount}, Kalisport: {kalisport_amount})"
                         else:
-                            comparison_result = f"Erreur: Montants différents (Up2Pay: {up2pay_amount}, Kalisport: {kalisport_amount})"
+                            # Pour les autres types de transaction, comparaison normale
+                            if abs(up2pay_amount - kalisport_amount) < 0.001:  # Tolérance de 0.1 centime
+                                comparison_result = "OK"
+                            else:
+                                comparison_result = f"Erreur: Montants différents (Up2Pay: {up2pay_amount}, Kalisport: {kalisport_amount})"
                     else:
                         comparison_result = f"Erreur: Up2Pay accepté mais Kalisport {kalisport_status}"
                 else:
