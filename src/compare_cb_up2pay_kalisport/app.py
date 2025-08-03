@@ -37,6 +37,9 @@ def app():
     setup_logging(args.debug)
     logger = logging.getLogger(__name__)
     
+    logger.info("=== Démarrage de l'application de comparaison Up2Pay/Kalisport ===")
+    logger.debug(f"Arguments reçus: data-dir={args.data_dir}, output-dir={args.output_dir}, debug={args.debug}")
+    
     # Obtenir les chemins absolus
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
@@ -48,63 +51,85 @@ def app():
     logger.debug(f"Data directory: {data_dir}")
     logger.debug(f"Output directory: {output_dir}")
     
+    # Vérification de l'existence des répertoires
+    if not os.path.exists(data_dir):
+        logger.error(f"Le répertoire de données n'existe pas: {data_dir}")
+        return 1
+    
+    logger.debug(f"Répertoire de données vérifié: {data_dir}")
+    
+    # Création du répertoire de sortie si nécessaire
+    if not os.path.exists(output_dir):
+        logger.info(f"Création du répertoire de sortie: {output_dir}")
+        os.makedirs(output_dir, exist_ok=True)
+    
     try:
-        # Lire les fichiers
-        print(f"-> Scan des fichiers Up2Pay dans {data_dir}...")
-        logger.info(f"Lecture des fichiers Up2Pay dans {data_dir}")
+        # Lire les fichiers Up2Pay
+        logger.info(f"Scan des fichiers Up2Pay dans {data_dir}...")
+        logger.debug("Début de la lecture des fichiers Up2Pay avec template 'Export_transactions_*.csv'")
         
         up2pay_data = FileReader.read_up2pay_file(data_dir, "Export_transactions_*.csv")
-        logger.debug(f"Données Up2Pay chargées: {len(up2pay_data)} transactions")
+        logger.info(f"Données Up2Pay chargées: {len(up2pay_data)} transactions")
+        logger.debug(f"Détails du chargement Up2Pay: {len(up2pay_data)} transactions trouvées")
         if args.debug and up2pay_data:
             logger.debug(f"Premier élément Up2Pay: {up2pay_data[0]}")
         
+        # Lire les fichiers Up2Pay PNF (optionnel)
+        logger.info("Scan des fichiers Up2Pay PNF (planifiés)...")
+        logger.debug("Début de la lecture des fichiers Up2Pay PNF avec template 'Export_pnf_*.csv'")
+        
         up2pay_pnf_data = FileReader.read_up2pay_pnf_file(data_dir, "Export_pnf_*.csv")
-        logger.debug(f"Données Up2Pay PNF chargées: {len(up2pay_pnf_data)} transactions planifiées")
+        logger.info(f"Données Up2Pay PNF chargées: {len(up2pay_pnf_data)} transactions planifiées")
+        logger.debug(f"Détails du chargement Up2Pay PNF: {len(up2pay_pnf_data)} transactions planifiées trouvées")
         if args.debug and up2pay_pnf_data:
             logger.debug(f"Premier élément Up2Pay PNF: {up2pay_pnf_data[0]}")
-        
-        print(f"--> Nombre de paiements Up2Pay trouvés: {len(up2pay_data)}")
-        print(f"--> Nombre de paiements Up2Pay pnf trouvés: {len(up2pay_pnf_data)}")
                 
-        # Lire les autres fichiers Kalisport
-        print(f"-> Scan des fichiers Kalisport dans {data_dir}...")
-        logger.info(f"Lecture des fichiers Kalisport dans {data_dir}")
+        # Lire les fichiers Kalisport
+        logger.info(f"Scan des fichiers Kalisport dans {data_dir}...")
+        logger.debug("Début de la lecture des fichiers Kalisport avec template 'paiements-*.csv'")
         
         kalisport_data = FileReader.read_kalisport_file(data_dir, "paiements-*.csv")
-        logger.debug(f"Données Kalisport chargées: {len(kalisport_data)} paiements")
+        logger.info(f"Données Kalisport chargées: {len(kalisport_data)} paiements")
+        logger.debug(f"Détails du chargement Kalisport: {len(kalisport_data)} paiements trouvés")
         if args.debug and kalisport_data:
             logger.debug(f"Premier élément Kalisport: {kalisport_data[0]}")
         
-        print(f"--> Nombre de paiements Kalisport trouvés: {len(kalisport_data)}")
+        # Vérification des données chargées
+        if not up2pay_data:
+            logger.warning("Aucune transaction Up2Pay trouvée")
+        if not kalisport_data:
+            logger.warning("Aucun paiement Kalisport trouvé")
         
         # Comparer les paiements
-        print("-> Comparaison des paiements...")
-        logger.info("Début de la comparaison des paiements")
+        logger.info("Début de la comparaison des paiements...")
+        logger.debug(f"Comparaison entre {len(up2pay_data)} transactions Up2Pay et {len(kalisport_data)} paiements Kalisport")
         
         comparison_results = PaymentComparator.compare_payments(up2pay_data, kalisport_data)
-        logger.debug(f"Résultats de comparaison: {len(comparison_results)} éléments")
+        logger.info(f"Comparaison terminée: {len(comparison_results)} résultats générés")
+        logger.debug(f"Détails des résultats de comparaison: {len(comparison_results)} éléments")
         
         # Analyse des paiements
-        print("-> Analyse des paiements Up2Pay...")
-        logger.info("Début de l'analyse des paiements Up2Pay")
+        logger.info("Début de l'analyse des paiements Up2Pay...")
+        logger.debug("Initialisation du compteur Up2Pay")
         
         counter = Up2PayCounter()
         
-        logger.debug("Ajout des transactions Up2Pay au compteur")
+        logger.debug(f"Ajout de {len(up2pay_data)} transactions Up2Pay au compteur")
         counter.add_transactions(up2pay_data)
         
-        logger.debug("Ajout des transactions planifiées Up2Pay au compteur")
+        logger.debug(f"Ajout de {len(up2pay_pnf_data)} transactions planifiées Up2Pay au compteur")
         counter.add_planned_transactions(up2pay_pnf_data)
         
         reference_payment_summary = counter.get_all_summaries()
         id_payment_summary = counter.get_all_id_summaries()
         
+        logger.info(f"Analyse terminée: {len(reference_payment_summary)} résumés par référence, {len(id_payment_summary)} résumés par ID")
         logger.debug(f"Résumés par référence: {len(reference_payment_summary)} éléments")
         logger.debug(f"Résumés par ID: {len(id_payment_summary)} éléments")
 
         # Générer le fichier Excel
-        print("-> Génération du fichier Excel...")
-        logger.info("Début de la génération du fichier Excel")
+        logger.info("Début de la génération du fichier Excel...")
+        logger.debug(f"Génération Excel dans le répertoire: {output_dir}")
         
         output_file = ExcelGenerator.generate_excel(
             comparison_results, 
@@ -113,19 +138,20 @@ def app():
             output_dir
         )
         
-        print(f"-> Fichier Excel généré avec succès: {output_file}")
-        logger.info(f"Fichier Excel généré: {output_file}")
+        logger.info(f"Fichier Excel généré avec succès: {output_file}")
+        logger.debug(f"Chemin complet du fichier généré: {os.path.abspath(output_file)}")
+        
+        logger.info("=== Traitement terminé avec succès ===")
         
     except Exception as e:
-        error_msg = f"Erreur: {str(e)}"
-        print(error_msg)
+        error_msg = f"Erreur lors du traitement: {str(e)}"
         logger.error(error_msg)
         
         if args.debug:
             logger.error("Traceback complet:")
             logger.error(traceback.format_exc())
-            print("\n=== TRACEBACK COMPLET ===")
-            traceback.print_exc()
+        else:
+            logger.error("Utilisez --debug pour plus de détails")
         
         return 1
     
