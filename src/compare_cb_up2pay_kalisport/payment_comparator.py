@@ -17,17 +17,25 @@ class PaymentComparator:
             Liste des résultats de comparaison
         """
         # Créer un dictionnaire pour accéder rapidement aux paiements Kalisport par numéro de transaction
-        kalisport_dict = {payment.transaction_number: payment for payment in kalisport_data if payment.transaction_number}
+        kalisport_dict = {}
+        for payment in kalisport_data:
+            if payment.transaction_number:
+                # Supprimer les zéros en préfixe du numéro de transaction
+                normalized_number = payment.transaction_number.lstrip('0')
+                if normalized_number:  # S'assurer qu'il reste quelque chose après suppression des zéros
+                    kalisport_dict[normalized_number] = payment
         
         comparison_results = []
         
         for up2pay_payment in up2pay_data:
             transaction_number = up2pay_payment.transaction_number
+            # Normaliser aussi le numéro de transaction Up2Pay pour la recherche
+            normalized_transaction_number = transaction_number.lstrip('0') if transaction_number else ''
             up2pay_status = up2pay_payment.status
             up2pay_amount = up2pay_payment.amount
             
-            # Chercher le paiement correspondant dans Kalisport
-            kalisport_payment = kalisport_dict.get(transaction_number)
+            # Chercher le paiement correspondant dans Kalisport avec le numéro normalisé
+            kalisport_payment = kalisport_dict.get(normalized_transaction_number)
             
             kalisport_status = "Non trouvé"
             kalisport_amount = 0
