@@ -1,3 +1,4 @@
+
 from typing import List
 from .models import KalisportPayment, Up2PayTransaction, ComparisonPayment
 
@@ -24,9 +25,19 @@ class PaymentComparator:
                 normalized_number = payment.transaction_number.lstrip('0')
                 if normalized_number:  # S'assurer qu'il reste quelque chose après suppression des zéros
                     kalisport_dict[normalized_number] = payment
+
+        # Créer un dictionnaire pour accéder rapidement aux paiements Up2Pay par numéro de transaction
+        up2pay_dict = {}
+        for payment in up2pay_data:
+            if payment.transaction_number:
+                normalized_number = payment.transaction_number.lstrip('0')
+                if normalized_number:
+                    up2pay_dict[normalized_number] = payment
         
         comparison_results = []
+        processed_kalisport_numbers = set()
         
+        # Traiter d'abord tous les paiements Up2Pay
         for up2pay_payment in up2pay_data:
             transaction_number = up2pay_payment.transaction_number
             # Normaliser aussi le numéro de transaction Up2Pay pour la recherche
@@ -45,6 +56,9 @@ class PaymentComparator:
             comparison_result = "Erreur: Paiement non trouvé dans Kalisport"
             
             if kalisport_payment:
+                # Marquer ce paiement Kalisport comme traité
+                processed_kalisport_numbers.add(normalized_transaction_number)
+                
                 kalisport_status = kalisport_payment.status
                 kalisport_amount = kalisport_payment.amount
                 kalisport_name = kalisport_payment.name
@@ -91,5 +105,26 @@ class PaymentComparator:
                 comparison_result=comparison_result,
                 date_time=up2pay_payment.date_time
             ))
+
+        # Traiter les paiements Kalisport qui n'ont pas de correspondance dans Up2Pay
+        for kalisport_payment in kalisport_data:
+            if kalisport_payment.transaction_number:
+                normalized_number = kalisport_payment.transaction_number.lstrip('0')
+                if normalized_number and normalized_number not in processed_kalisport_numbers:
+                    # Ce paiement Kalisport n'a pas de correspondance dans Up2Pay
+                    comparison_results.append(ComparisonPayment(
+                        transaction_number=kalisport_payment.transaction_number,
+                        payment_method=kalisport_payment.payment_method,
+                        reference="",  # Pas de référence Up2Pay
+                        name=kalisport_payment.name,
+                        first_name=kalisport_payment.first_name,
+                        up2pay_type="",  # Pas de type Up2Pay
+                        up2pay_amount=0,  # Pas de montant Up2Pay
+                        kalisport_amount=kalisport_payment.amount,
+                        up2pay_status="Non trouvé",
+                        kalisport_status=kalisport_payment.status,
+                        comparison_result="Erreur: Paiement Kalisport sans correspondance Up2Pay",
+                        date_time=kalisport_payment.payment_date if hasattr(kalisport_payment, 'payment_date') else ""
+                    ))
         
         return comparison_results
