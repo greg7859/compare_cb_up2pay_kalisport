@@ -1,5 +1,6 @@
 
-from typing import List
+from typing import List, Dict
+from collections import defaultdict
 from .models import KalisportPayment, Up2PayTransaction, ComparisonPayment
 
 class PaymentComparator:
@@ -17,6 +18,9 @@ class PaymentComparator:
         Returns:
             Liste des résultats de comparaison
         """
+        # Détecter les doublons dans Kalisport
+        kalisport_duplicates = PaymentComparator._detect_kalisport_duplicates(kalisport_data)
+        
         # Créer un dictionnaire pour accéder rapidement aux paiements Kalisport par numéro de transaction
         kalisport_dict = {}
         for payment in kalisport_data:
@@ -24,7 +28,9 @@ class PaymentComparator:
                 # Supprimer les zéros en préfixe du numéro de transaction
                 normalized_number = payment.transaction_number.lstrip('0')
                 if normalized_number:  # S'assurer qu'il reste quelque chose après suppression des zéros
-                    kalisport_dict[normalized_number] = payment
+                    # Si c'est un doublon, on garde le premier trouvé
+                    if normalized_number not in kalisport_dict:
+                        kalisport_dict[normalized_number] = payment
 
         # Créer un dictionnaire pour accéder rapidement aux paiements Up2Pay par numéro de transaction
         up2pay_dict = {}
@@ -65,6 +71,12 @@ class PaymentComparator:
                 kalisport_first_name = kalisport_payment.first_name
                 kalisport_payment_method = kalisport_payment.payment_method
                 
+                # Vérifier si c'est un doublon Kalisport
+                duplicate_info = ""
+                if normalized_transaction_number in kalisport_duplicates:
+                    duplicate_count = kalisport_duplicates[normalized_transaction_number]
+                    duplicate_info = f" [ATTENTION: {duplicate_count} doublons Kalisport détectés]"
+                
                 # Vérifier si le paiement est accepté dans Up2Pay et payé dans Kalisport
                 if up2pay_status.lower() == "acceptée" or up2pay_status.lower() == "acceptee":
                     if kalisport_status.lower() == "payé" or kalisport_status.lower() == "paye":
@@ -73,19 +85,19 @@ class PaymentComparator:
                             # Pour les remboursements, Up2Pay est positif et Kalisport négatif
                             # On compare en valeur absolue
                             if abs(abs(up2pay_amount) - abs(kalisport_amount)) < 0.001:
-                                comparison_result = "OK"
+                                comparison_result = "OK" + duplicate_info
                             else:
-                                comparison_result = f"Erreur: Montants différents (Up2Pay: {up2pay_amount}, Kalisport: {kalisport_amount})"
+                                comparison_result = f"Erreur: Montants différents (Up2Pay: {up2pay_amount}, Kalisport: {kalisport_amount})" + duplicate_info
                         else:
                             # Pour les autres types de transaction, comparaison normale
                             if abs(up2pay_amount - kalisport_amount) < 0.001:  # Tolérance de 0.1 centime
-                                comparison_result = "OK"
+                                comparison_result = "OK" + duplicate_info
                             else:
-                                comparison_result = f"Erreur: Montants différents (Up2Pay: {up2pay_amount}, Kalisport: {kalisport_amount})"
+                                comparison_result = f"Erreur: Montants différents (Up2Pay: {up2pay_amount}, Kalisport: {kalisport_amount})" + duplicate_info
                     else:
-                        comparison_result = f"Erreur: Up2Pay accepté mais Kalisport {kalisport_status}"
+                        comparison_result = f"Erreur: Up2Pay accepté mais Kalisport {kalisport_status}" + duplicate_info
                 else:
-                     comparison_result = f"Erreur: Up2Pay {up2pay_status}"
+                     comparison_result = f"Erreur: Up2Pay {up2pay_status}" + duplicate_info
             elif up2pay_status.lower() == "acceptée" or up2pay_status.lower() == "acceptee":
                 comparison_result = "Erreur: Paiement accepté dans Up2Pay mais absent dans Kalisport"
             elif up2pay_status.lower() == "refusée" or up2pay_status.lower() == "refusee":
@@ -111,6 +123,12 @@ class PaymentComparator:
             if kalisport_payment.transaction_number:
                 normalized_number = kalisport_payment.transaction_number.lstrip('0')
                 if normalized_number and normalized_number not in processed_kalisport_numbers:
+                    # Vérifier si c'est un doublon Kalisport
+                    duplicate_info = ""
+                    if normalized_number in kalisport_duplicates:
+                        duplicate_count = kalisport_duplicates[normalized_number]
+                        duplicate_info = f" [ATTENTION: {duplicate_count} doublons Kalisport détectés]"
+                    
                     # Ce paiement Kalisport n'a pas de correspondance dans Up2Pay
                     comparison_results.append(ComparisonPayment(
                         transaction_number=kalisport_payment.transaction_number,
@@ -123,8 +141,34 @@ class PaymentComparator:
                         kalisport_amount=kalisport_payment.amount,
                         up2pay_status="Non trouvé",
                         kalisport_status=kalisport_payment.status,
-                        comparison_result="Erreur: Paiement Kalisport sans correspondance Up2Pay",
+                        comparison_result="Erreur: Paiement Kalisport sans correspondance Up2Pay" + duplicate_info,
                         date_time=kalisport_payment.payment_date if hasattr(kalisport_payment, 'payment_date') else ""
                     ))
         
         return comparison_results
+
+    @staticmethod
+    def _detect_kalisport_duplicates(kalisport_data: List[KalisportPayment]) -> Dict[str, int]:
+        """
+        Détecte les doublons dans les paiements Kalisport basés sur le numéro de transaction.
+        
+        Args:
+            kalisport_data: Liste des paiements Kalisport
+            
+        Returns:
+            Dictionnaire avec les numéros de transaction normalisés comme clés et le nombre d'occurrences comme valeurs
+            (seulement pour les numéros qui apparaissent plus d'une fois)
+        """
+        transaction_counts = defaultdict(int)
+        
+        # Compter les occurrences de chaque numéro de transaction normalisé
+        for payment in kalisport_data:
+            if payment.transaction_number:
+                normalized_number = payment.transaction_number.lstrip('0')
+                if normalized_number:
+                    transaction_counts[normalized_number] += 1
+        
+        # Retourner seulement les numéros qui apparaissent plus d'une fois
+        duplicates = {number: count for number, count in transaction_counts.items() if count > 1}
+        
+        return duplicates
