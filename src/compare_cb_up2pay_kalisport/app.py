@@ -66,9 +66,9 @@ def app():
     try:
         # Lire les fichiers Up2Pay
         logger.info(f"Scan des fichiers Up2Pay dans {data_dir}...")
-        logger.debug("Début de la lecture des fichiers Up2Pay avec template 'Export_transactions_*.csv'")
+        logger.debug("Début de la lecture des fichiers Up2Pay avec template 'Export_transactions_*.xls'")
         
-        up2pay_data = FileReader.read_up2pay_file(data_dir, "Export_transactions_*.csv")
+        up2pay_data = FileReader.read_up2pay_file(data_dir, "Export_transactions_*.xls")
         logger.info(f"Données Up2Pay chargées: {len(up2pay_data)} transactions")
         logger.debug(f"Détails du chargement Up2Pay: {len(up2pay_data)} transactions trouvées")
         if args.debug and up2pay_data:
@@ -76,9 +76,9 @@ def app():
         
         # Lire les fichiers Up2Pay PNF (optionnel)
         logger.info("Scan des fichiers Up2Pay PNF (planifiés)...")
-        logger.debug("Début de la lecture des fichiers Up2Pay PNF avec template 'Export_pnf_*.csv'")
+        logger.debug("Début de la lecture des fichiers Up2Pay PNF avec template 'Export_pnf_*.xls'")
         
-        up2pay_pnf_data = FileReader.read_up2pay_pnf_file(data_dir, "Export_pnf_*.csv")
+        up2pay_pnf_data = FileReader.read_up2pay_pnf_file(data_dir, "Export_pnf_*.xls")
         logger.info(f"Données Up2Pay PNF chargées: {len(up2pay_pnf_data)} transactions planifiées")
         logger.debug(f"Détails du chargement Up2Pay PNF: {len(up2pay_pnf_data)} transactions planifiées trouvées")
         if args.debug and up2pay_pnf_data:
