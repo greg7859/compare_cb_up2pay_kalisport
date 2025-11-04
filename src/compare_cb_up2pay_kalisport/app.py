@@ -24,10 +24,12 @@ def setup_logging(debug: bool = False):
 def app():
     """Point d'entrée principal de l'application."""
     parser = argparse.ArgumentParser(description='Compare les paiements entre Up2Pay et Kalisport.')
-    parser.add_argument('--data-dir', type=str, default='data',
+    parser.add_argument('--data-dir', "-d", type=str, default='data',
                         help='Répertoire contenant les fichiers de données (par défaut: data)')
-    parser.add_argument('--output-dir', type=str, default='output',
+    parser.add_argument('--output-dir', "-o", type=str, default='output',
                         help='Répertoire de sortie pour le fichier Excel (par défaut: output)')
+    parser.add_argument('--section', "-s", type=str, default="",
+                        help='Section concernée par la comparaison (par défaut: ""). Elle sera utilisée pour compléter le nom du fichier de résultats.')
     parser.add_argument('--debug', action='store_true',
                         help='Active le mode debug avec logs détaillés')
     
@@ -38,7 +40,9 @@ def app():
     logger = logging.getLogger(__name__)
     
     logger.info("=== Démarrage de l'application de comparaison Up2Pay/Kalisport ===")
-    logger.debug(f"Arguments reçus: data-dir={args.data_dir}, output-dir={args.output_dir}, debug={args.debug}")
+    logger.debug(f"Arguments reçus: data-dir={args.data_dir}, output-dir={args.output_dir}, section={args.section}, debug={args.debug}")
+
+    section = args.section.upper()  # Convertir la section en majuscule
     
     # Obtenir les chemins absolus
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -135,7 +139,8 @@ def app():
             comparison_results, 
             reference_payment_summary, 
             id_payment_summary, 
-            output_dir
+            output_dir, 
+            section
         )
         
         logger.info(f"Fichier Excel généré avec succès: {output_file}")

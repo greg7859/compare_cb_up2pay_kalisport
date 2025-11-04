@@ -13,7 +13,8 @@ class ExcelGenerator:
     def generate_excel(comparison_results: List[ComparisonPayment], 
                       reference_payment_summary: Dict[str, ReferencePaymentSummary], 
                       id_payment_summary: Dict[str, IdPaymentSummary], 
-                      output_dir: str) -> str:
+                      output_dir: str,
+                      section: str) -> str:
         """
         Génère un fichier Excel avec les résultats de comparaison.
         
@@ -38,7 +39,7 @@ class ExcelGenerator:
         
         # Générer un nom de fichier avec la date et l'heure actuelles
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = os.path.join(output_dir, f"comparaison_paiements_{timestamp}.xlsx")
+        output_file = os.path.join(output_dir, f"comparaison_paiements_{section}_{timestamp}.xlsx")
         logger.info(f"Fichier Excel à générer: {output_file}")
         
         # Créer les DataFrames pour chaque onglet
