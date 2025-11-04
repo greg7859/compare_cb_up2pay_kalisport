@@ -81,7 +81,7 @@ class PaymentComparator:
                 if up2pay_status.lower() == "acceptée" or up2pay_status.lower() == "acceptee":
                     if kalisport_status.lower() == "payé" or kalisport_status.lower() == "paye":
                         # Comparer les montants en tenant compte du type de transaction
-                        if up2pay_payment.type.lower() == "remboursement":
+                        if up2pay_payment.type.lower() == "remboursement" or up2pay_payment.type.lower() == "annulation":
                             # Pour les remboursements, Up2Pay est positif et Kalisport négatif
                             # On compare en valeur absolue
                             if abs(abs(up2pay_amount) - abs(kalisport_amount)) < 0.001:
