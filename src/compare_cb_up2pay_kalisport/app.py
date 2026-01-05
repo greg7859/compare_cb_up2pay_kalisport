@@ -47,12 +47,29 @@ def app():
     # Obtenir les chemins absolus
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
-    data_dir = os.path.join(project_dir, args.data_dir)
-    output_dir = os.path.join(project_dir, args.output_dir)
-    
+    # Utilise args.data_dir si défini, sinon project_dir + "/data"
+    if args.data_dir:
+        data_dir = args.data_dir
+    else:
+        data_dir = os.path.join(project_dir, "data")
+
+    # Utilise args.output_dir si défini, sinon project_dir + "/output"
+    if args.output_dir:
+        output_dir = args.output_dir
+    else:
+        output_dir = os.path.join(project_dir, "output")
+
+    # Définition des sous-répertoires de données
+    transaction_dir = os.path.join(data_dir, "Transaction")
+    pnf_dir = os.path.join(data_dir, "Pnf")
+    kalisport_dir = os.path.join(data_dir, "kalisport")
+
     logger.debug(f"Script directory: {script_dir}")
     logger.debug(f"Project directory: {project_dir}")
     logger.debug(f"Data directory: {data_dir}")
+    logger.debug(f"Transaction directory: {transaction_dir}")
+    logger.debug(f"PNF directory: {pnf_dir}")
+    logger.debug(f"Kalisport directory: {kalisport_dir}")
     logger.debug(f"Output directory: {output_dir}")
     
     # Vérification de l'existence des répertoires
@@ -61,7 +78,8 @@ def app():
         return 1
     
     logger.debug(f"Répertoire de données vérifié: {data_dir}")
-    
+
+
     # Création du répertoire de sortie si nécessaire
     if not os.path.exists(output_dir):
         logger.info(f"Création du répertoire de sortie: {output_dir}")
@@ -69,30 +87,33 @@ def app():
     
     try:
         # Lire les fichiers Up2Pay
-        logger.info(f"Scan des fichiers Up2Pay dans {data_dir}...")
-        logger.debug("Début de la lecture des fichiers Up2Pay avec template 'Export_transactions_*.xls'")
-        
-        up2pay_data = FileReader.read_up2pay_file(data_dir, "Export_transactions_*.xls")
+        logger.info(f"Scan des fichiers Up2Pay dans {transaction_dir}...")
+        up2pay_pattern = f"{section}-*.xlsx" if section else "Export_transactions_*.xls"
+        logger.debug(f"Début de la lecture des fichiers Up2Pay avec template '{up2pay_pattern}'")
+
+        up2pay_data = FileReader.read_up2pay_file(transaction_dir, up2pay_pattern)
         logger.info(f"Données Up2Pay chargées: {len(up2pay_data)} transactions")
         logger.debug(f"Détails du chargement Up2Pay: {len(up2pay_data)} transactions trouvées")
         if args.debug and up2pay_data:
             logger.debug(f"Premier élément Up2Pay: {up2pay_data[0]}")
         
         # Lire les fichiers Up2Pay PNF (optionnel)
-        logger.info("Scan des fichiers Up2Pay PNF (planifiés)...")
-        logger.debug("Début de la lecture des fichiers Up2Pay PNF avec template 'Export_pnf_*.xls'")
-        
-        up2pay_pnf_data = FileReader.read_up2pay_pnf_file(data_dir, "Export_pnf_*.xls")
+        logger.info(f"Scan des fichiers Up2Pay PNF (planifiés) dans {pnf_dir}...")
+        up2pay_pnf_pattern = f"{section}-*.xlsx" if section else "Export_pnf_*.xls"
+        logger.debug(f"Début de la lecture des fichiers Up2Pay PNF avec template '{up2pay_pnf_pattern}'")
+
+        up2pay_pnf_data = FileReader.read_up2pay_pnf_file(pnf_dir, up2pay_pnf_pattern)
         logger.info(f"Données Up2Pay PNF chargées: {len(up2pay_pnf_data)} transactions planifiées")
         logger.debug(f"Détails du chargement Up2Pay PNF: {len(up2pay_pnf_data)} transactions planifiées trouvées")
         if args.debug and up2pay_pnf_data:
             logger.debug(f"Premier élément Up2Pay PNF: {up2pay_pnf_data[0]}")
                 
         # Lire les fichiers Kalisport
-        logger.info(f"Scan des fichiers Kalisport dans {data_dir}...")
-        logger.debug("Début de la lecture des fichiers Kalisport avec template 'paiements-*.csv'")
-        
-        kalisport_data = FileReader.read_kalisport_file(data_dir, "paiements-*.csv")
+        logger.info(f"Scan des fichiers Kalisport dans {kalisport_dir}...")
+        kalisport_pattern = f"{section}-*.csv" if section else "paiements-*.csv"
+        logger.debug(f"Début de la lecture des fichiers Kalisport avec template '{kalisport_pattern}'")
+
+        kalisport_data = FileReader.read_kalisport_file(kalisport_dir, kalisport_pattern)
         logger.info(f"Données Kalisport chargées: {len(kalisport_data)} paiements")
         logger.debug(f"Détails du chargement Kalisport: {len(kalisport_data)} paiements trouvés")
         if args.debug and kalisport_data:

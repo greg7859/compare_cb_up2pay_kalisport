@@ -1,5 +1,8 @@
 /.venv
-/src/compare_cb_up2pay_kalisport/__pycache__
+__pycache__/
 /data
+/output
+
+.idea
 
 debug.log
