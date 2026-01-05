@@ -47,8 +47,17 @@ def app():
     # Obtenir les chemins absolus
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
-    data_dir = os.path.join(project_dir, args.data_dir)
-    output_dir = os.path.join(project_dir, args.output_dir)
+    # Utilise args.data_dir si défini, sinon project_dir + "/data"
+    if args.data_dir:
+        data_dir = args.data_dir
+    else:
+        data_dir = os.path.join(project_dir, "data")
+
+    # Utilise args.output_dir si défini, sinon project_dir + "/output"
+    if args.output_dir:
+        output_dir = args.output_dir
+    else:
+        output_dir = os.path.join(project_dir, "output")
 
     # Définition des sous-répertoires de données
     transaction_dir = os.path.join(data_dir, "Transaction")
@@ -79,7 +88,7 @@ def app():
     try:
         # Lire les fichiers Up2Pay
         logger.info(f"Scan des fichiers Up2Pay dans {transaction_dir}...")
-        up2pay_pattern = f"{section}_*.xlsx" if section else "Export_transactions_*.xls"
+        up2pay_pattern = f"{section}-*.xlsx" if section else "Export_transactions_*.xls"
         logger.debug(f"Début de la lecture des fichiers Up2Pay avec template '{up2pay_pattern}'")
 
         up2pay_data = FileReader.read_up2pay_file(transaction_dir, up2pay_pattern)
@@ -90,7 +99,7 @@ def app():
         
         # Lire les fichiers Up2Pay PNF (optionnel)
         logger.info(f"Scan des fichiers Up2Pay PNF (planifiés) dans {pnf_dir}...")
-        up2pay_pnf_pattern = f"{section}_*.xlsx" if section else "Export_pnf_*.xls"
+        up2pay_pnf_pattern = f"{section}-*.xlsx" if section else "Export_pnf_*.xls"
         logger.debug(f"Début de la lecture des fichiers Up2Pay PNF avec template '{up2pay_pnf_pattern}'")
 
         up2pay_pnf_data = FileReader.read_up2pay_pnf_file(pnf_dir, up2pay_pnf_pattern)
@@ -101,7 +110,7 @@ def app():
                 
         # Lire les fichiers Kalisport
         logger.info(f"Scan des fichiers Kalisport dans {kalisport_dir}...")
-        kalisport_pattern = f"{section}_*.csv" if section else "paiements-*.csv"
+        kalisport_pattern = f"{section}-*.csv" if section else "paiements-*.csv"
         logger.debug(f"Début de la lecture des fichiers Kalisport avec template '{kalisport_pattern}'")
 
         kalisport_data = FileReader.read_kalisport_file(kalisport_dir, kalisport_pattern)
